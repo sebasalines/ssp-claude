@@ -1,6 +1,6 @@
-# ssp
+# ssp-claude
 
-A personal [Claude Code](https://claude.com/claude-code) plugin — the **SSP** orchestration layer: discovery-driven planning, wave-based parallel execution, verification, and continuous learning.
+A personal [Claude Code](https://claude.com/claude-code) plugin -- the **SSP** orchestration layer: discovery-driven planning, wave-based parallel execution, verification, and continuous learning.
 
 ## What's in the box
 
@@ -27,10 +27,10 @@ A personal [Claude Code](https://claude.com/claude-code) plugin — the **SSP** 
 
 ```bash
 # Add this repo as a marketplace
-/plugin marketplace add <github-user>/ssp
+/plugin marketplace add sebasalines/ssp-claude
 
 # Install the plugin
-/plugin install ssp@ssp
+/plugin install ssp-claude@ssp-claude
 ```
 
 ### Manual (local dev)

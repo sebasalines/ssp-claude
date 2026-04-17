@@ -1,5 +1,5 @@
 {
-  "name": "ssp",
+  "name": "ssp-claude",
   "version": "0.1.0",
   "description": "SSP — a personal orchestration layer for Claude Code. Plan, execute in parallel waves, verify, learn, and archive.",
   "author": {

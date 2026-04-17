@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "ssp",
-  "description": "SSP orchestration layer for Claude Code — discovery-driven planning, wave-based parallel execution, verification, and continuous learning.",
+  "name": "ssp-claude",
+  "description": "SSP orchestration layer for Claude Code -- discovery-driven planning, wave-based parallel execution, verification, and continuous learning.",
   "owner": {
     "name": "Sebastian Salines",
     "email": "salines.sebastian@gmail.com"
@@ -11,7 +11,7 @@
   },
   "plugins": [
     {
-      "name": "ssp",
+      "name": "ssp-claude",
       "source": "./",
       "description": "SSP skills (plan, run, verify, learn, clean, update) and the ssp-executor subagent — a living orchestration layer that mirrors deep planning + parallel execution + verification + learning.",
       "version": "0.1.0",
