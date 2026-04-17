@@ -1,0 +1,21 @@
+{
+  "name": "ssp",
+  "version": "0.1.0",
+  "description": "SSP — a personal orchestration layer for Claude Code. Plan, execute in parallel waves, verify, learn, and archive.",
+  "author": {
+    "name": "Sebastian Salines",
+    "email": "salines.sebastian@gmail.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "ssp",
+    "orchestration",
+    "skills",
+    "agents",
+    "planning",
+    "parallel-execution",
+    "tdd",
+    "workflow"
+  ]
+}
