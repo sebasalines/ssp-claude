@@ -50,27 +50,44 @@ Installed into `~/.claude/rules/` — personal engineering conventions that SSP 
 ./install.sh
 ```
 
-Copies skills to `~/.claude/skills/` and the agent to `~/.claude/agents/`.
+Copies skills to `~/.claude/skills/`, the agent to `~/.claude/agents/`, and rules to `~/.claude/rules/`.
 
 ## How SSP Works
 
 ```
-/ssp-plan      →  Discovery → discussion → atomic task specs with wave graph
+claude --worktree            ← fresh worktree
     ↓
-/ssp-run       →  Parallel wave execution (ssp-executor subagents)
-                  → auto-commits, rebases onto staging branch
-                  → auto-spawns code-reviewer + security-reviewer
+/ssp-setup-worktree          (auto-invoked by /ssp-plan, or run standalone)
+    → symlinks node_modules, generated code, .claude/ssp-plans to the main tree
     ↓
-/ssp-verify    →  Typecheck, tests, build, lint
+/ssp-plan                    → Discovery → discussion → atomic task specs with wave graph
+    ↓                         Plans live under .claude/ssp-plans/<slug>/
+/ssp-run                     → Parallel wave execution (ssp-executor subagents)
+                               → auto-commits per task, rebases onto staging branch
+                               → auto-spawns code-reviewer + security-reviewer
     ↓
-/ssp-learn     →  Extract reusable patterns → skills/
+/ssp-verify                  → Typecheck, tests, build, lint → VERIFICATION.md
     ↓
-/ssp-clean     →  Archive plan folder to single audit markdown
+/ssp-learn                   → Extract reusable patterns → skills/learned/
+    ↓
+/ssp-clean                   → Archive plan folder to single audit markdown
 ```
+
+Parallel utilities:
+- `/ssp-review-prs` — run periodically (e.g. with `/loop`) to review incoming PRs in the background
+- `/ssp-update` — snapshot the current skills/agent/rules state to a private gist backup
+
+## Plan artifacts
+
+Plans write to `.claude/ssp-plans/<slug>/` in the project root. Add that path to your project's `.gitignore`. Inside a worktree, `ssp-setup-worktree` symlinks it to the main working tree so plans survive worktree cleanup and are visible from the main tree without copy-back.
+
+Previous versions of SSP used `.planning/<slug>/`. The path was renamed to live under `.claude/` so a single gitignore line covers all local tooling output.
 
 ## Philosophy
 
 SSP is a *living* system. When a skill fails to match actual workflow, update the skill in the same session. Skills should get better every time they're used.
+
+See [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ## License
 
