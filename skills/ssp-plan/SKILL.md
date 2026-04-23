@@ -49,6 +49,14 @@ Don't use for single-file changes or trivial fixes — just do those directly.
 
    Only advance to step 1 when the worktree is even-or-ahead of `origin/main`.
 
+0b. **Worktree symlink check.** If running inside a secondary worktree (i.e. `git rev-parse --show-toplevel` ≠ the main working tree from `git worktree list | head -1`), ensure shared state is symlinked. The cheap heuristic: `node_modules` and `.claude/ssp-plans` should be symlinks pointing at the main tree. If either is missing or is a real directory, run:
+
+   ```bash
+   bash ~/.claude/skills/ssp-setup-worktree/setup.sh
+   ```
+
+   This is idempotent — safe to run even when already set up. If the script reports the main tree is missing `node_modules`, stop and tell the user to `npm install` in the main tree, then re-run. Skip this step entirely when operating in the main working tree.
+
 1. Understand what the user wants. If the request is vague, ask — don't guess intent.
 2. Determine plan type: `feat` | `fix` | `refactor` | `chore`
 3. Propose a name and slug: `YYYY-MM-DD-<kebab-description>`. User can rename.
@@ -76,7 +84,7 @@ Don't use for single-file changes or trivial fixes — just do those directly.
 5. Create the plan folder:
 
 ```bash
-mkdir -p .planning/<slug>/tasks .planning/<slug>/results
+mkdir -p .claude/ssp-plans/<slug>/tasks .claude/ssp-plans/<slug>/results
 ```
 
 ### Step 1: Discovery

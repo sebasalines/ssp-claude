@@ -106,7 +106,7 @@ Agent(
   model: "<task.model from frontmatter — default sonnet>",
   prompt: "Execute task <id> from plan <slug>.
 
-    Plan folder: <absolute path to .planning/<slug>/>
+    Plan folder: <absolute path to .claude/ssp-plans/<slug>/>
     Task spec: <absolute path>/tasks/<id>-<name>.md
 
     Your job is to TRANSLATE the task spec's ## Implementation block into code
@@ -250,17 +250,7 @@ Update progress task.
 
 Run `/ssp-learn` (Skill tool). It reads the plan artifacts + session, evaluates quality, and saves reusable patterns to the right location (global vs project `skills/learned/`).
 
-### Step 8: Copy plan to main working tree
-
-If running in a worktree (not the main working tree), copy the plan folder:
-
-```bash
-MAIN_TREE=$(git worktree list | head -1 | awk '{print $1}')
-mkdir -p "$MAIN_TREE/.planning/"
-cp -r .planning/<slug> "$MAIN_TREE/.planning/<slug>"
-```
-
-### Step 9: Summary
+### Step 8: Summary
 
 ```
 Plan: <slug>
