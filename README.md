@@ -4,7 +4,7 @@ A personal [Claude Code](https://claude.com/claude-code) plugin -- the **SSP** o
 
 ## What's in the box
 
-### Skills (6)
+### Skills (7)
 
 | Skill | Purpose |
 |-------|---------|
@@ -14,12 +14,22 @@ A personal [Claude Code](https://claude.com/claude-code) plugin -- the **SSP** o
 | `ssp-learn` | Extracts reusable patterns from a completed plan — code and process. |
 | `ssp-clean` | Compresses a finished plan folder into a single audit-trail markdown. Manual only. |
 | `ssp-update` | Snapshots all SSP skills + agent to a private GitHub gist backup. |
+| `ssp-review-prs` | Scans for PRs assigned or review-requested and spawns background code reviews via `claude -p` in worktrees. |
 
 ### Agents (1)
 
 | Agent | Role |
 |-------|------|
 | `ssp-executor` | Executes a single atomic task from an SSP plan. Code-only, no git. Spawned by `/ssp-run`. |
+
+### Global rules
+
+| Group | Files |
+|-------|-------|
+| `common/` | `agents`, `code-display`, `coding-style`, `comments`, `development-workflow`, `git-workflow`, `hooks`, `orchestration-layer`, `patterns`, `performance`, `security`, `testing` |
+| `typescript/` | `coding-style`, `patterns`, `security`, `testing` |
+
+Installed into `~/.claude/rules/` — personal engineering conventions that SSP and other skills read during planning, review, and execution. Project-specific rules (e.g. `rules/projects/...`) are deliberately not included; those stay on each machine.
 
 ## Install
 

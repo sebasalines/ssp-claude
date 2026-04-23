@@ -40,6 +40,10 @@ Scan the conversation for:
 - **File disjointness failures**: parallel tasks that needed the same file despite the plan saying otherwise
 - **Discovery gaps**: files or patterns the discovery phase missed that executors had to figure out on their own
 - **Discussion decisions that proved right/wrong**: "D-01 said use X, and it turned out to be the right call because..."
+- **Branch handling failures**: did `/ssp-run` create an orphan branch? Did it fail to detect a sub-plan? Did it skip merge-back?
+- **Regression from prior plans**: did a sub-plan undo or fix work from the parent plan? If so, the parent plan had a bug that should have been caught during review/verification
+- **Skill text that caused the failure**: if an SSP skill did the wrong thing, find the exact line in the SKILL.md that led to the wrong behavior. **Fix the skill file in this session** — don't just note the problem
+- **Wrong orchestration tool used**: was `/ssp-plan` bypassed in favor of a less structured approach (e.g., ECC `/plan`, ad-hoc coding)? If so, why? Was the plan skill too heavyweight for the task, or did the user not know to use it?
 
 ## Process
 

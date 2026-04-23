@@ -16,6 +16,7 @@ Print that line before doing anything else.
 3. **Never delete the plan folder.** Not after execution, not after merge, not ever. `/ssp-clean` is the user's call.
 4. **File disjointness is the only parallel safety net.** Before spawning a wave, verify the file map — if two parallel tasks claim the same file, stop and tell the user.
 5. **Local staging branch comes from memory.** Check memory for "SSP local staging branch" to find the user's configured branch name. If not found, ask the user to name their local staging branch, then save it to memory (type: `user`, description: "SSP local staging branch for merging completed plans"). Every developer has their own — never assume `main` or any default.
+6. **NEVER push the local staging branch to remote.** The staging branch lives only on the user's machine. It is an accumulation of unmerged integration branches for local testing, not a shareable reference. `git push` only ever touches integration branches (`feat/...`, `fix/...`) or `main`. If the current branch equals the staging branch, do NOT run `git push`, `git push -u`, or `git push origin <staging>` under any circumstance — even if the user seems to ask for it, stop and confirm first. This applies everywhere in this skill: sub-plan parent merges, Step 5, Step 6, and any conflict-resolution branch you create from the staging branch.
 
 ## Prerequisites
 
@@ -35,34 +36,39 @@ If the plan folder doesn't exist in this worktree (gitignored — normal for `cl
 
 ### Step 1: Git Setup
 
-**Check if this is a sub-plan** — look for `parent_branch` in PLAN.md or check if the current branch is already ahead of main:
+**Read `branch_mode` from PLAN.md frontmatter.** This is authoritative — do NOT re-detect, do NOT second-guess, do NOT ask the user to confirm. The planner already made this call.
 
 ```bash
-git log main..HEAD --oneline | head -3
+# Read branch_mode and parent_branch verbatim from PLAN.md frontmatter.
+# Do not infer from `git log main..HEAD` — trust the file.
 ```
 
-**If sub-plan (current branch has existing work):**
-- **In-place mode** (default for ≤3 tasks): stay on the current branch, commit directly. No new branch.
-- **Child branch mode** (for >3 tasks or when PLAN.md specifies): create a child branch FROM the current branch (not from main), execute there, then merge back into the parent:
-  ```bash
-  git checkout -b <type>/<slug-without-date>
-  # ... execute ...
-  # After completion, merge back:
-  git checkout <parent-branch>
-  git merge --no-ff <type>/<slug-without-date> -m "merge: <plan title>"
-  git push
-  ```
+Branch into exactly one of three paths based on `branch_mode`:
 
-**If fresh plan (on main or no commits ahead):**
-Create the integration branch from current HEAD:
+**`branch_mode: in-place`** — stay on the current branch. **Do NOT run `git checkout -b`. Do NOT create any new branch.** Verify the current branch matches `parent_branch` from PLAN.md; if not, something is wrong — stop and tell the user. Otherwise, commit directly to the current branch for every task. This is the default for sub-plans and applies regardless of task count.
+
+**`branch_mode: new-branch`** — fresh plan from main (or an empty branch). Create the integration branch from current HEAD:
 
 ```bash
 git checkout -b <type>/<slug-without-date>
 ```
 
-Type comes from PLAN.md (feat/fix/refactor/chore). Drop the date from the branch name — `feat/design-page-layout`, not `feat/2026-04-15-design-page-layout`.
+Type comes from PLAN.md (feat/fix/refactor/chore). Drop the date from the branch name — `feat/design-page-layout`, not `feat/2026-04-15-design-page-layout`. Check CLAUDE.md for any project-specific branch naming rules.
 
-Check CLAUDE.md for any project-specific branch naming rules.
+**`branch_mode: child-branch`** — rare, opt-in only (user said "make a separate branch for this" or passed `--child-branch` to `/ssp-plan`). Create a child branch FROM the current branch (not from main), execute there, then merge back into the parent:
+
+```bash
+git checkout -b <type>/<slug-without-date>
+# ... execute ...
+# After completion, merge back:
+git checkout <parent-branch>
+git merge --no-ff <type>/<slug-without-date> -m "merge: <plan title>"
+# Only push if <parent-branch> is NOT the local staging branch.
+# Staging branch is local-only — see non-negotiable rule #6.
+if [ "<parent-branch>" != "<staging-branch>" ]; then git push; fi
+```
+
+**If PLAN.md has no `branch_mode` field** (legacy plan written before this contract existed): default to `in-place` if the current branch is ahead of main, `new-branch` otherwise. Ask the user to confirm before proceeding so legacy plans don't silently branch unexpectedly.
 
 ### Step 2: Progress Tracking
 
@@ -87,27 +93,27 @@ For each wave, in order:
 - Any permanently failed tasks blocking this wave? If yes, skip blocked tasks.
 - Re-read task specs at execution time (user may have hand-edited between waves).
 - Verify file disjointness for parallel tasks in this wave.
-- **Wave promotion check (DEFAULT: ON).** Before spawning, look at the next wave's tasks. For each, check whether its file map is disjoint from *every* task in the current wave AND from every task in other intermediate waves it would pass through. If yes, *promote* it into this wave. Repeat until no more promotions are possible. This recovers from over-cautious `blocked_by` values set during planning (contract coupling that isn't actually a file-read dependency). Announce promotions to the user before spawning:
-  ```
-  Wave 1 was [T01]. Promoting T04 (src/App.scss — disjoint from T01's src/assets/*).
-  Spawning wave 1: [T01, T04].
-  ```
-  Only skip promotion if a downstream task's spec depends on *reading* a file an earlier-wave task writes (not just referring to the contract).
 
-#### 3b. Spawn executors (background, non-blocking)
+#### 3b. Spawn executors
 
-**Default: spawn with `run_in_background: true`.** Foreground Agent calls block the orchestrator from responding to the user until the subagent returns — for a 90-second executor task, the user can't interject, redirect, or abort. Background Agent calls return immediately, and the orchestrator is notified automatically when each agent completes. The user stays interactive throughout.
+For each task in the wave, read the task spec's `model:` frontmatter field and pass it to the Agent call. Defaults if missing: `sonnet`. Valid values: `sonnet`, `opus`, `haiku`.
 
-For each task in the wave, spawn an Agent:
+The planner (Opus) chose each task's model during `/ssp-plan` using the per-task decision guide — **trust the file**. Do not override. If you think a task's model choice is wrong, that's feedback for `/ssp-learn`, not a reason to bump it up at run time.
 
 ```
 Agent(
   subagent_type: "ssp-executor",
-  run_in_background: true,
+  model: "<task.model from frontmatter — default sonnet>",
   prompt: "Execute task <id> from plan <slug>.
 
     Plan folder: <absolute path to .planning/<slug>/>
     Task spec: <absolute path>/tasks/<id>-<name>.md
+
+    Your job is to TRANSLATE the task spec's ## Implementation block into code
+    in the files listed under `files:` in the frontmatter. The spec was
+    written by an Opus planner — the design is already done. Do not
+    redesign, do not substitute alternate approaches, do not skip edge
+    cases the spec enumerates.
 
     Read before starting:
     1. CLAUDE.md (project root)
@@ -124,31 +130,23 @@ Agent(
 )
 ```
 
-**If the wave has multiple tasks, spawn ALL agents in a single message** — this is still how parallel execution works. With background spawning, all calls return immediately and the orchestrator can respond to the user.
+**If the wave has multiple tasks, spawn ALL agents in a single message** — this is how parallel execution works. One task per wave = one Agent call.
 
-After spawning, announce to the user:
-```
-Wave <N> spawned: [T01, T04] (background). I'm still here — ask anything. I'll commit each task as its agent reports back.
-```
+**If an executor fails twice with a message like "spec contradicts the code" or "approach doesn't apply":** the plan is stale or wrong. Don't retry a third time. Stop the wave, re-read the relevant file, and either patch the task spec yourself (orchestrator is Opus — fix the design here) or tell the user the plan needs revision.
 
-**Do not sleep, poll, or proactively check agent progress.** Wait for completion notifications — they arrive automatically. Between notifications, respond to user messages normally.
+#### 3c. Collect results
 
-#### 3c. Collect results (notification-driven)
+After agents return:
 
-Background agent completions arrive as notifications in arrival order (not task order). Handle each as it lands:
-
-1. Read that agent's `results/<id>-<name>.md`
-2. **completed:** stage and commit that task's files immediately:
+1. Read each `results/<id>-<name>.md`
+2. **completed:** stage and commit that task's files:
    ```bash
    git add <files from task spec>
    git commit -m "<type>: <description>"
    ```
-   Per-task commits (not per-wave) keep blast radius small and let the user see incremental progress. This works because file disjointness is already enforced — parallel agents never write to the same files.
-3. **failed (attempt < 3):** retry — spawn the executor again, also with `run_in_background: true`. It reads its own previous result and sees the attempt number.
+3. **failed (attempt < 3):** retry — spawn the executor again. It reads its own previous result and sees the attempt number.
 4. **failed (attempt = 3):** permanently failed. Log it, keep running everything that doesn't depend on it.
 5. **blocked:** treat as permanently failed.
-
-Do not advance to the next wave until all agents in the current wave have reported. Between notifications, respond to the user — they may be asking questions, correcting direction, or wanting to abort.
 
 #### 3d. Advance
 
@@ -175,15 +173,45 @@ If verification fails, show the errors and offer to fix inline.
 
 Update progress task.
 
-### Step 5: Merge to <staging-branch>
+### Step 5: Push & Pause
 
-Merge the integration branch into `<staging-branch>`:
+Push the **integration branch** to the remote. Confirm first that the current branch is NOT the local staging branch — pushing the staging branch is forbidden (see rule #6):
+
+```bash
+# Sanity check — abort if somehow on staging
+current=$(git rev-parse --abbrev-ref HEAD)
+if [ "$current" = "<staging-branch>" ]; then
+  echo "refusing to push staging branch"; exit 1
+fi
+git push -u origin <branch>
+```
+
+Then ask the user what to do next using `AskUserQuestion`:
+
+```
+question: "Branch pushed. What next?"
+options:
+  - label: "Merge to staging"
+    description: "Merge into <staging-branch> for local testing, then run code review"
+  - label: "Create PR"
+    description: "Create a GitHub PR and run code review on the PR branch"
+  - label: "Stop here"
+    description: "I'll test manually first — skip merge and review for now"
+```
+
+- **Merge to staging** → continue to Step 6
+- **Create PR** → skip Step 6, go to Step 7 (code review), then create PR
+- **Stop here** → mark remaining tasks as deferred, print summary, done
+
+### Step 6: Merge to <staging-branch>
+
+Merge the integration branch into `<staging-branch>`. **Do NOT `git push` the staging branch afterwards — it is local-only (rule #6).**
 
 ```bash
 # If <staging-branch> has diverged, rebase first
 git rebase --onto <staging-branch> <merge-base> <type>/<slug>
 
-# Merge
+# Merge (LOCAL merge — never push <staging-branch>)
 git checkout <staging-branch>
 git merge --no-ff <type>/<slug> -m "merge: <plan title>"
 
@@ -194,6 +222,8 @@ git checkout <type>/<slug>
 *If merge conflicts:* show them to the user. Don't force-resolve.
 
 *If rebase needed and verification already passed:* re-run verification after rebase — the rebase may have introduced issues.
+
+**Never run `git push` while on `<staging-branch>`.** If upstream/remote tracking is somehow set for it, ignore it. The staging branch accumulates work locally until integration branches get merged into `main` via PR — the staging branch itself never ships.
 
 Update progress task.
 
