@@ -1,6 +1,6 @@
 ---
 name: ssp-run
-description: Wave-based parallel execution. Spawns ssp-executor subagents, handles retries, commits, verifies, rebases onto local staging branch, kicks off code review. Use after /ssp-plan.
+description: Wave-based parallel execution. Spawns ssp-executor subagents, handles retries, commits, verifies, pushes integration branch, kicks off code review. Use after /ssp-plan. Staging-branch operations live in /ssp-local-sync.
 ---
 
 # SSP Run
@@ -202,6 +202,9 @@ options:
 ```
 
 - **Run /ssp-local-sync** → invoke `Skill(skill="ssp-local-sync")` and exit `/ssp-run` (the sync skill owns the rest)
+
+  > **Note:** picking this option **defers** Step 6 (Code Review) and Step 7 (Learnings) — they are not silently skipped, just postponed until you run "Create PR" later or invoke the reviewers manually. If you want code review feedback before merging into staging, pick "Create PR" first.
+
 - **Create PR** → continue to Step 6 (code review), then create PR with `gh pr create --base main`
 - **Stop here** → mark remaining tasks as deferred, print summary, done
 
