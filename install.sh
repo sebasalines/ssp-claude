@@ -14,7 +14,7 @@ RULES_DIR="$CLAUDE_DIR/rules"
 mkdir -p "$SKILLS_DIR" "$AGENTS_DIR" "$RULES_DIR/common" "$RULES_DIR/typescript"
 
 echo "Installing SSP skills into $SKILLS_DIR"
-for skill in ssp-plan ssp-run ssp-verify ssp-learn ssp-clean ssp-update ssp-review-prs ssp-setup-worktree; do
+for skill in ssp-plan ssp-run ssp-verify ssp-learn ssp-clean ssp-update ssp-review-prs ssp-setup-worktree ssp-local-sync; do
   src="$SCRIPT_DIR/skills/$skill"
   dest="$SKILLS_DIR/$skill"
   if [[ -d "$dest" ]]; then
