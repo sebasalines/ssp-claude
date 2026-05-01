@@ -203,7 +203,7 @@ options:
 
 - **Run /ssp-local-sync** → invoke `Skill(skill="ssp-local-sync")` and exit `/ssp-run` (the sync skill owns the rest)
 
-  > **Note:** picking this option **defers** Step 6 (Code Review) and Step 7 (Learnings) — they are not silently skipped, just postponed until you run "Create PR" later or invoke the reviewers manually. If you want code review feedback before merging into staging, pick "Create PR" first.
+  > **Note:** picking this option **defers** Step 6 (Code Review) and Step 7 (Learnings) — they are not silently skipped, just postponed until you run "Create PR" later or invoke the reviewers manually. If you want code review feedback before syncing the branch into your local staging via `/ssp-local-sync`, pick "Create PR" first.
 
 - **Create PR** → continue to Step 6 (code review), then create PR with `gh pr create --base main`
 - **Stop here** → mark remaining tasks as deferred, print summary, done

@@ -109,12 +109,15 @@ fi
 # the up-to-date version of the merged-in work. Otherwise, fall back to the captured
 # SHA (still works as a content-addressed merge target, just may be stale).
 resolved_tips=""
-for sha in $captured_tips; do
+# Use while-read (consistent with M-01/M-02) — captured_tips is well-formed hex
+# SHAs by construction, but unquoted for-loop expansion is the wrong pattern.
+while IFS= read -r sha; do
+  [ -z "$sha" ] && continue
   # Find the most recent remote branch tip that contains this SHA.
   remote_branch=$(git branch -r --contains "$sha" 2>/dev/null \
     | grep -v 'HEAD' \
     | head -1 \
-    | tr -d ' ')
+    | tr -d ' \n\r')
   if [ -n "$remote_branch" ]; then
     remote_tip=$(git rev-parse "$remote_branch")
     resolved_tips="$resolved_tips $remote_tip"
@@ -123,7 +126,7 @@ for sha in $captured_tips; do
     resolved_tips="$resolved_tips $sha"
     echo "  $sha -> (no remote branch contains; using captured SHA)"
   fi
-done
+done < <(printf '%s\n' "$captured_tips")
 ```
 
 #### 3b. Confirm with user (H-02 fix)
@@ -133,7 +136,7 @@ Show the user the divergence summary and ask before any destructive action:
 ```
 ahead_of_main=$(git rev-list --count origin/main.."$staging")
 behind_main=$(git rev-list --count "$staging"..origin/main)
-replay_count=$(echo $resolved_tips | wc -w | tr -d ' ')
+replay_count=$(printf '%s\n' $resolved_tips | grep -c .)
 
 # Use AskUserQuestion (loaded in prerequisites):
 #   question: "Staging has diverged from origin/main (ahead $ahead_of_main, behind $behind_main).
@@ -171,14 +174,15 @@ chmod 600 ~/.claude/ssp-staging-reset-log.md 2>/dev/null || true
 git checkout "$staging"
 git reset --hard origin/main
 
-# 3. Replay each resolved tip
-for tip in $resolved_tips; do
+# 3. Replay each resolved tip — use while-read to avoid unquoted expansion.
+while IFS= read -r tip; do
+  [ -z "$tip" ] && continue
   git merge --no-ff "$tip" -m "merge: replay $(git rev-parse --short "$tip") (auto-resync)" || {
     echo "Conflict during replay of $tip. Aborting auto-recover; staging is at origin/main + partial replay."
     echo "Manual recovery: see ~/.claude/ssp-staging-reset-log.md"
     exit 1
   }
-done
+done < <(printf '%s\n' $resolved_tips)
 
 # Back to the integration branch (we'll merge it next in Step 4)
 git checkout "$current"
