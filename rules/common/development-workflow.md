@@ -7,10 +7,11 @@
 1. Open `claude --worktree` (isolated from your local staging branch)
 2. `/ssp-plan` — discovery, discussion, atomic task planning
 3. Review plan, tweak task specs if needed
-4. `/ssp-run` — parallel execution, verification, merge to staging branch, code review
-5. Test locally on your staging branch
-6. Rebase integration branch onto `main`, push, create PR
-7. `/ssp-clean` when done
+4. `/ssp-run` — parallel execution, verification, code review, push integration branch
+5. `/ssp-local-sync` — sync `seba-local` from `origin/main`, merge integration branch in, run post-merge hooks (deps, migrations, dev-server restart)
+6. Test locally on your staging branch
+7. Create PR (target `main`)
+8. `/ssp-clean` when done
 
 For trivial changes (single file, obvious fix), skip SSP and work directly.
 
@@ -28,17 +29,25 @@ Prefer adopting a proven approach over writing net-new code.
 
 ## The Local Staging Branch
 
-Every developer maintains a personal staging branch (e.g., `seba-local`) that stays up-to-date with `main`. All completed work merges here first for local testing before any PR gets created. This is configured per-user in Claude Code memory — check memory for "SSP local staging branch."
+Every developer maintains a personal staging branch (e.g., `seba-local`) that serves as a local-only integration sandbox for testing combined feature work before any of it ships. This is configured per-user in Claude Code memory — check memory for "SSP local staging branch."
 
 ```
 main (shared, what ships)
-  └── seba-local (personal, local testing)
+  └── seba-local (personal, local testing — NEVER pushed)
         ├── feat/design-chat-sidebar (merged after verification)
         ├── fix/auth-redirect (merged after verification)
         └── ... (test the combined result locally)
 ```
 
-**NEVER push the local staging branch to remote.** This is a hard rule that applies everywhere — SSP, standalone work, manual git commands, any context. The staging branch is a local-only accumulation of integration branches for testing; it has no remote counterpart and must not get one. `git push` only touches integration branches (`feat/...`, `fix/...`) and `main`. Before any `git push`, verify the current branch is not the configured staging branch. If the user asks to push it, stop and confirm — they almost certainly meant to push the integration branch or create a PR instead.
+**The contract** — these rules are non-negotiable:
+
+1. **Every feature/fix branch bases off `origin/main`.** Never base a feature branch off `seba-local`. If you're sitting on `seba-local` when you start a new branch, `git fetch origin main && git checkout -b feat/foo origin/main` — never `git checkout -b feat/foo` (which would inherit staging's accumulated state).
+2. **Merges are one-way: features → `seba-local`.** `seba-local` never merges back into `main` and never merges back into a feature branch. The staging branch exists only to combine in-flight work for local testing.
+3. **PRs always target `main`, never `seba-local`.** `seba-local` has no remote counterpart and no PR can target it.
+4. **Before any merge into `seba-local`: fast-forward from `origin/main` first.** If staging cannot fast-forward (it has diverged), reset to `origin/main` and re-merge the accumulated feature branches. `/ssp-local-sync` does this automatically.
+5. **NEVER push the local staging branch to remote.** Hard rule everywhere — SSP, standalone work, manual git commands. The staging branch is local-only by definition. `git push` only ever touches integration branches (`feat/...`, `fix/...`) or `main`. Before any `git push`, verify the current branch is not the configured staging branch. If the user asks to push it, stop and confirm — they almost certainly meant the integration branch.
+
+**Workflow**: use `/ssp-local-sync` to merge a feature branch into `seba-local`. It fetches `origin/main`, syncs staging (auto-resets if diverged), merges the current worktree branch in, and runs post-merge hooks (`npm install`, `prisma generate`, `prisma migrate dev`, tmux pane restart).
 
 ## Staying Fresh with Remote Main
 
@@ -87,3 +96,38 @@ When the work involves testable logic, use ECC's `/everything-claude-code:tdd` s
 2. Implement to pass (GREEN)
 3. Refactor (IMPROVE)
 4. Verify 80%+ coverage
+
+## Worktree Location Standard
+
+Place all git worktrees at `~/worktrees/<repo>/<branch-name>`. Never create them inside `~/projects/` (clutters the projects directory) or inside `.claude/worktrees/` (reserved for agent-managed internal use).
+
+```bash
+mkdir -p ~/worktrees/<repo>
+git worktree add ~/worktrees/<repo>/feat/my-feature -b feat/my-feature origin/main
+```
+
+**Why:** Ad-hoc worktrees in `~/projects/` mix human and agent working trees. `~/worktrees/<repo>/` is the established convention.
+
+**Don't trust `isolation: worktree` alone.** The Agent tool's `isolation: "worktree"` parameter creates a temporary worktree but does NOT guarantee a separate branch — agents can still commit to the user's working branch by default. Always create the feature branch explicitly before launching an implementation agent. Confirm the worktree exists on the right branch before instructing the agent to start.
+
+<!-- Origin: feedback_worktree_discipline.md (project memory promotion) -->
+
+## Fix Problems Directly
+
+When you discover a fixable problem (server down, missing dependency, broken config, stale cache), **fix it yourself immediately**. Do not output instructions telling the user to run a command — you have access to the same shell they do.
+
+**Why:** Diagnosing a problem and then handing the fix back wastes the user's time and breaks flow.
+
+**How to apply:** After diagnosing any issue — dead dev server, missing file, wrong config, failed build — take the corrective action in the same response. Only ask the user when the fix requires credentials, destructive action, or a decision between multiple valid options.
+
+<!-- Origin: feedback_fix_dont_instruct.md (project memory promotion) -->
+
+## Explain Before Implementing
+
+When investigating a bug or feature with the user, don't jump from diagnosis straight to commit + PR. If the user says "let's work on it" or "let's fix it," that means **collaborate** — present the proposed approach with the specific code changes and get explicit confirmation before editing files.
+
+**Why:** Users want to understand and steer the fix, not just receive a finished PR. The walkthrough is the value, especially for non-trivial changes.
+
+**How to apply:** After diagnosing a bug, walk through the fix approach: which files, what changes, why this approach over alternatives. Wait for the user's nod before touching code. Especially when the user explicitly asks to be "in the loop."
+
+<!-- Origin: feedback_explain_before_implementing.md (project memory promotion) -->
