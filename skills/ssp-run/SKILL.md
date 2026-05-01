@@ -1,6 +1,6 @@
 ---
 name: ssp-run
-description: Wave-based parallel execution. Spawns ssp-executor subagents, handles retries, commits, verifies, rebases onto local staging branch, kicks off code review. Use after /ssp-plan.
+description: Wave-based parallel execution. Spawns ssp-executor subagents, handles retries, commits, verifies, pushes integration branch, kicks off code review. Use after /ssp-plan. Staging-branch operations live in /ssp-local-sync.
 ---
 
 # SSP Run
@@ -78,7 +78,7 @@ Create tasks for the progress display — wave-level granularity:
 ☐ Wave 1: create layout, sidebar shell, chat panel (3 tasks)
 ☐ Wave 2: wire sidebar (1 task)
 ☐ Verification
-☐ Merge to <staging-branch>
+☐ Push integration branch
 ☐ Code review
 ```
 
@@ -186,46 +186,29 @@ fi
 git push -u origin <branch>
 ```
 
+**Re-read git state before asking the user.** The push commit log + reflog is your last cached snapshot. Run `git log --oneline -3 && git reflog HEAD | head -5` so the next decision is grounded in current state.
+
 Then ask the user what to do next using `AskUserQuestion`:
 
 ```
 question: "Branch pushed. What next?"
 options:
-  - label: "Merge to staging"
-    description: "Merge into <staging-branch> for local testing, then run code review"
+  - label: "Run /ssp-local-sync"
+    description: "Sync seba-local from origin/main, merge this branch in, run post-merge hooks (npm install, prisma, dev server restart)"
   - label: "Create PR"
-    description: "Create a GitHub PR and run code review on the PR branch"
+    description: "Create a GitHub PR targeting main and run code review on the PR branch"
   - label: "Stop here"
     description: "I'll test manually first — skip merge and review for now"
 ```
 
-- **Merge to staging** → continue to Step 6
-- **Create PR** → skip Step 6, go to Step 7 (code review), then create PR
+- **Run /ssp-local-sync** → invoke `Skill(skill="ssp-local-sync")` and exit `/ssp-run` (the sync skill owns the rest)
+
+  > **Note:** picking this option **defers** Step 6 (Code Review) and Step 7 (Learnings) — they are not silently skipped, just postponed until you run "Create PR" later or invoke the reviewers manually. If you want code review feedback before syncing the branch into your local staging via `/ssp-local-sync`, pick "Create PR" first.
+
+- **Create PR** → continue to Step 6 (code review), then create PR with `gh pr create --base main`
 - **Stop here** → mark remaining tasks as deferred, print summary, done
 
-### Step 6: Merge to <staging-branch>
-
-Merge the integration branch into `<staging-branch>`. **Do NOT `git push` the staging branch afterwards — it is local-only (rule #6).**
-
-```bash
-# If <staging-branch> has diverged, rebase first
-git rebase --onto <staging-branch> <merge-base> <type>/<slug>
-
-# Merge (LOCAL merge — never push <staging-branch>)
-git checkout <staging-branch>
-git merge --no-ff <type>/<slug> -m "merge: <plan title>"
-
-# Back to integration branch (it survives for PR)
-git checkout <type>/<slug>
-```
-
-*If merge conflicts:* show them to the user. Don't force-resolve.
-
-*If rebase needed and verification already passed:* re-run verification after rebase — the rebase may have introduced issues.
-
-**Never run `git push` while on `<staging-branch>`.** If upstream/remote tracking is somehow set for it, ignore it. The staging branch accumulates work locally until integration branches get merged into `main` via PR — the staging branch itself never ships.
-
-Update progress task.
+**Important: re-read git state again after the user answers.** Long pauses for user input can change branch state externally — another worktree, another claude session, a manual reset, a scheduled hook. Before any branch-touching action that follows the AskUserQuestion, run `git -C <path> log --oneline -3 && git -C <path> reflog <branch> | head -5` to confirm. If a `reset: moving to ...` entry appeared between your prior interaction and now, re-derive the situation from current state — don't paste in the previously-drafted plan.
 
 ### Step 6: Code Review
 
@@ -257,7 +240,6 @@ Plan: <slug>
 Branch: <type>/<slug>
 Tasks: X/Y completed, Z failed, W skipped
 Verification: PASS / FAIL
-Merged to: <staging-branch>
 Review: clean / N critical, M high, P medium issues
 Learnings: N patterns → LEARNINGS.md
 ```
