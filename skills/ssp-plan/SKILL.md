@@ -65,7 +65,11 @@ Don't use for single-file changes or trivial fixes — just do those directly.
    ```bash
    current=$(git rev-parse --abbrev-ref HEAD)
    ahead=$(git log main..HEAD --oneline 2>/dev/null | wc -l | tr -d ' ')
-   echo "branch=$current ahead=$ahead"
+   # Read the configured staging branch from user memory.
+   # Look for a memory entry with description matching "SSP local staging branch"
+   # (typically `seba-local`). If unset, prompt the user to name it and save it.
+   staging="<staging-branch-from-memory>"
+   echo "branch=$current ahead=$ahead staging=$staging"
    ```
 
    Then apply this table:
@@ -73,12 +77,15 @@ Don't use for single-file changes or trivial fixes — just do those directly.
    | Current branch | Ahead of main? | User said "separate branch"? | `branch_mode` | Parent branch |
    |----------------|----------------|------------------------------|---------------|---------------|
    | `main` | — | — | `new-branch` | — |
+   | `<staging>` (matches memory value) | — | — | **`new-branch` off `origin/main`** | — |
    | any other branch | any (0 or 1+) | no | **`in-place`** | current branch |
    | any other branch | any | yes (or `--child-branch` flag) | `child-branch` | current branch |
 
    **Defaults are load-bearing — do not ask the user "in-place vs child branch?".** The table above IS the answer. The only time the user gets a say is when they spontaneously tell you "make a separate branch for this" (or pass `--child-branch`). Otherwise, honor the table silently.
 
    > The previous version of this table treated "non-main, 0 commits ahead" as `new-branch`, which misfires when the user creates a topic branch (e.g. via `EnterWorktree`) specifically to host the plan. If you're on a non-main branch, the user's act of putting you there IS the opt-in to that branch — honor it.
+
+   > **Why staging gets special-cased:** The local staging branch accumulates merged feature work for testing and is not meant to host new commits. If a user starts `/ssp-plan` while sitting on staging, treating that as `in-place` would commit feature work directly to the integration sandbox, polluting it with un-merged changes that confuse future merges. Forcing `new-branch` off `origin/main` keeps the contract: features always base off `origin/main`, never staging. See `~/.claude/rules/common/development-workflow.md` "The Local Staging Branch" for the full contract.
 
    Write the resolved mode + parent into PLAN.md frontmatter (see Step 3 template).
 5. Create the plan folder:
@@ -320,3 +327,9 @@ Show the user:
 Then: **"Run `/ssp-run` when ready."**
 
 Do NOT start execution. Planning and execution are separate.
+
+## Cross-references
+
+- **Branch contract:** `~/.claude/rules/common/development-workflow.md` "The Local Staging Branch"
+- **Stalled approaches during research/discovery:** `~/.claude/rules/common/escalation.md` (two-failure pivot rule)
+- **Showing options to the user:** always via `AskUserQuestion`, never as plain-text numbered lists. See the Discussion section above.
