@@ -51,7 +51,7 @@ main (shared, what ships)
 
 ## Staying Fresh with Remote Main
 
-Both the local staging branch AND any worktree you're about to plan in must be up-to-date with `origin/main` before a new SSP plan starts. Stale starting points cause merge hell at the end — cheap to fix at plan time, expensive to fix during Step 6.
+Any worktree you're about to plan in must be up-to-date with `origin/main` before a new SSP plan starts. Stale starting points cause merge hell at the end — cheap to fix at plan time, expensive to fix later. The local staging branch is handled separately — see "The Local Staging Branch" section above and `/ssp-local-sync`.
 
 **`/ssp-plan` runs this freshness check automatically at the start of Step 0.** Other SSP skills (`/ssp-run`, `/ssp-verify`) trust that `/ssp-plan` already did it and don't re-check.
 
@@ -63,10 +63,6 @@ git fetch origin main
 behind=$(git rev-list --count HEAD..origin/main)
 ahead=$(git rev-list --count origin/main..HEAD)
 echo "worktree branch: ahead=$ahead behind=$behind"
-
-# 3. Fetch-and-fast-forward the local staging branch without switching to it.
-git fetch origin main:<staging-branch> 2>/dev/null || true
-# If that fails (staging-branch has diverged from main), surface it — don't force-update.
 ```
 
 **Decision table:**
@@ -77,7 +73,7 @@ git fetch origin main:<staging-branch> 2>/dev/null || true
 | `ahead>0 behind=0` — clean feature branch, no drift | Proceed. |
 | `behind>0` (any ahead value) | **Stop.** Rebase the worktree onto `origin/main` (or ask the user) before starting the plan. Running `/ssp-plan` on a stale branch bakes drift into every task spec. |
 
-For the local staging branch: `git fetch origin main:<staging-branch>` fast-forwards it without checkout. If the fetch fails (staging has diverged), report it to the user — do NOT force-update. Let them choose to rebase, merge, or reset.
+The local staging branch is intentionally NOT touched by `/ssp-plan`'s freshness check — `/ssp-local-sync` owns all staging operations, including the auto-reset+remerge path when staging has diverged from `origin/main`. Run `/ssp-local-sync` whenever you want staging refreshed; don't try to fast-forward it from `/ssp-plan`.
 
 **When to skip:** explicit user instruction ("don't touch remote", offline work, airplane mode). Default to fresh — the fetch costs seconds; the alternative is midnight merge conflicts.
 
