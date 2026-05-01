@@ -64,10 +64,22 @@ else
       exit 1
     fi
 
-    # Verify base is reachable from origin/main (sanity: branch IS based off main's history)
-    if ! git merge-base --is-ancestor "$base" origin/main; then
-      echo "  ❌ FAIL: merge-base $base_short is not on origin/main's history"
-      exit 1
+    # Verify branch is rooted off origin/main, not off the staging branch.
+    # If merge-base(HEAD, staging) is descendant of merge-base(HEAD, origin/main),
+    # HEAD shares more history with staging than with main — meaning HEAD was branched
+    # off staging. The first check (--is-ancestor "$base" origin/main) was tautological:
+    # merge-base HEAD origin/main is by definition on origin/main's history.
+    staging="<staging-branch-from-memory>"
+    if [ -n "$staging" ] && git rev-parse --verify "$staging" >/dev/null 2>&1; then
+      staging_base=$(git merge-base HEAD "$staging")
+      main_base="$base"  # already computed above
+      if [ "$staging_base" != "$main_base" ] \
+         && git merge-base --is-ancestor "$main_base" "$staging_base"; then
+        echo "  ❌ FAIL: branch appears to be based off $staging, not origin/main"
+        echo "     main-base:    $(git rev-parse --short "$main_base")"
+        echo "     staging-base: $(git rev-parse --short "$staging_base")"
+        exit 1
+      fi
     fi
 
     echo "  ✓ PASS"
@@ -77,7 +89,7 @@ fi
 
 **Hard fail when:**
 - `file_count > 100` — typical staging-based branches pull in 200+ files
-- merge-base is not on `origin/main`'s history — branch is rooted somewhere unexpected
+- branch appears rooted off the staging branch (`merge-base(HEAD, staging)` is descendant of `merge-base(HEAD, origin/main)`)
 
 **Opt-out:** set `SSP_VERIFY_SKIP_DIFFSTAT=1` in the shell before running. Use for legitimate large refactors that intentionally touch >100 files.
 
