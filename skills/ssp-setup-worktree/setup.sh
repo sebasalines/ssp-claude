@@ -36,7 +36,7 @@ TARGETS=(
   "apps/ui/src/generated/prisma"
   "packages/workflow-types/dist"
   "apps/ui/.env.local"
-  "__ssp__/plans"
+  ".__ssp__/plans"
 )
 
 link_one() {

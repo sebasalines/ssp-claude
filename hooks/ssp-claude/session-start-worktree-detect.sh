@@ -48,7 +48,7 @@ needs_worktree_setup="no"
 needs_project_setup="no"
 
 # Worktree symlink check.
-if [ ! -L "$git_top/__ssp__/plans" ] && [ ! -L "$git_top/__ssp__" ]; then
+if [ ! -L "$git_top/.__ssp__/plans" ] && [ ! -L "$git_top/.__ssp__" ]; then
   needs_worktree_setup="yes"
 fi
 
@@ -56,7 +56,7 @@ fi
 # project-level state is inherited from main, so check the main checkout).
 gitignore="$main_top/.gitignore"
 if [ -f "$gitignore" ]; then
-  if ! grep -qE '^__ssp__/?$' "$gitignore"; then
+  if ! grep -qE '^.__ssp__/?$' "$gitignore"; then
     needs_project_setup="yes"
   fi
 else
@@ -88,11 +88,11 @@ EOF
 )
 
 if [ "$needs_worktree_setup" = "yes" ]; then
-  directive+=$'\n'"- **Worktree symlinks missing:** \`__ssp__/plans\` is not symlinked to the main checkout. Plan artifacts written here will not survive worktree cleanup."
+  directive+=$'\n'"- **Worktree symlinks missing:** \`.__ssp__/plans\` is not symlinked to the main checkout. Plan artifacts written here will not survive worktree cleanup."
 fi
 
 if [ "$needs_project_setup" = "yes" ]; then
-  directive+=$'\n'"- **Project not bootstrapped:** \`__ssp__/\` is not in the project's \`.gitignore\` and \`.claude/settings.local.json\` likely lacks SSP allow-rules."
+  directive+=$'\n'"- **Project not bootstrapped:** \`.__ssp__/\` is not in the project's \`.gitignore\` and \`.claude/settings.local.json\` likely lacks SSP allow-rules."
 fi
 
 directive+=$'\n\n'"## Required first action
@@ -107,7 +107,7 @@ With these three options:
 
 # Build option 2 in a variable so the strip pattern below is grep-able and
 # brittleness against text drift is contained.
-option_2=$'\n'"2. **Setup worktree + run /ssp-setup-project** — same as #1, plus run \`/ssp-setup-project\` first to bootstrap \`__ssp__/\` in the project gitignore + settings allow-rules. Recommended if this is the first SSP-using session in this project."
+option_2=$'\n'"2. **Setup worktree + run /ssp-setup-project** — same as #1, plus run \`/ssp-setup-project\` first to bootstrap \`.__ssp__/\` in the project gitignore + settings allow-rules. Recommended if this is the first SSP-using session in this project."
 
 if [ "$needs_project_setup" = "yes" ]; then
   directive+="$option_2"
