@@ -23,6 +23,14 @@ A personal [Claude Code](https://claude.com/claude-code) plugin -- the **SSP** o
 |-------|------|
 | `ssp-executor` | Executes a single atomic task from an SSP plan. Code-only, no git. Spawned by `/ssp-run`. |
 
+### Hooks (1)
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `ssp-claude/session-start-worktree-detect.sh` | `SessionStart` | Detects fresh worktrees missing `__ssp__/plans` symlink or projects missing `__ssp__/` in `.gitignore`. Injects onboarding context that prompts Claude to ask the user about renaming the branch + running `/ssp-setup-worktree` (and optionally `/ssp-setup-project`) before responding to their actual first message. Skip path is first-class — dismissible per-worktree via `.claude/.ssp-worktree-skip` marker. |
+
+Installed into `~/.claude/hooks/ssp-claude/` and registered in `~/.claude/settings.json` under `.hooks.SessionStart` by `install.sh` (prompt-gated; set `SSP_SKIP_HOOK_REGISTER=1` to skip the prompt).
+
 ### Global rules
 
 | Group | Files |
@@ -50,7 +58,7 @@ Installed into `~/.claude/rules/` — personal engineering conventions that SSP 
 ./install.sh
 ```
 
-Copies skills to `~/.claude/skills/`, the agent to `~/.claude/agents/`, and rules to `~/.claude/rules/`.
+Copies skills to `~/.claude/skills/`, the agent to `~/.claude/agents/`, hooks to `~/.claude/hooks/ssp-claude/`, and rules to `~/.claude/rules/`. After installing files, prompts to register the SessionStart hook in `~/.claude/settings.json` (set `SSP_SKIP_HOOK_REGISTER=1` to skip the prompt).
 
 ## How SSP Works
 
