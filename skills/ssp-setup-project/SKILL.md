@@ -138,8 +138,17 @@ else
   done
 fi
 
-# Remove the now-empty legacy directory
-rmdir .claude/ssp-plans 2>/dev/null && echo "Removed empty .claude/ssp-plans/"
+# Remove the now-empty legacy directory — only if truly empty.
+# Files (not directories) inside .claude/ssp-plans/ would not have been moved
+# by the loop above, so check before removing and surface anything left behind.
+leftover=$(find .claude/ssp-plans -mindepth 1 2>/dev/null | head -10)
+if [ -n "$leftover" ]; then
+  echo "Warning: .claude/ssp-plans/ still contains items (not dirs — left in place):"
+  echo "$leftover" | sed 's/^/  /'
+  echo "  Move or remove these manually if desired."
+else
+  rmdir .claude/ssp-plans 2>/dev/null && echo "Removed empty .claude/ssp-plans/"
+fi
 ```
 
 ### Step 5: Write Project Allow-Rules
@@ -179,7 +188,10 @@ else
   for perm in "${new_perms[@]}"; do
     # Add only if not already present.
     if ! jq -e --arg p "$perm" '.permissions.allow // [] | index($p)' "$settings_file" >/dev/null 2>&1; then
-      tmp=$(mktemp)
+      # mktemp in the same directory so `mv` is an atomic rename (same filesystem).
+      # Otherwise `mv` falls back to copy+delete and a crash mid-operation can
+      # leave $settings_file truncated.
+      tmp=$(mktemp -p "$(dirname "$settings_file")")
       jq --arg p "$perm" '.permissions = (.permissions // {}) | .permissions.allow = ((.permissions.allow // []) + [$p])' "$settings_file" > "$tmp"
       mv "$tmp" "$settings_file"
     fi
@@ -202,9 +214,20 @@ Use AskUserQuestion separately (do NOT batch with Step 2):
       description: "Each project still needs its own .claude/settings.local.json. More explicit, less convenient."
 ```
 
-If yes, apply the same merge logic as Step 5 but against `$HOME/.claude/settings.json`.
+If yes, apply the same merge logic as Step 5 but against `$HOME/.claude/settings.json`. The `new_perms` array is the same as in Step 5 — re-declare it here since each bash block in this skill is treated as an independent snippet by the executor.
 
 ```bash
+# Same allow-rules as Step 5 — re-declared here for snippet independence.
+new_perms=(
+  "Read(__ssp__/**)"
+  "Write(__ssp__/**)"
+  "Edit(__ssp__/**)"
+  "Bash(mkdir:__ssp__/*)"
+  "Bash(ls:__ssp__/*)"
+  "Bash(cat:__ssp__/*)"
+  "Bash(rm:__ssp__/*)"
+)
+
 global_settings="$HOME/.claude/settings.json"
 mkdir -p "$HOME/.claude"
 
@@ -222,7 +245,8 @@ EOF
 else
   for perm in "${new_perms[@]}"; do
     if ! jq -e --arg p "$perm" '.permissions.allow // [] | index($p)' "$global_settings" >/dev/null 2>&1; then
-      tmp=$(mktemp)
+      # Atomic rename — mktemp in same dir as target.
+      tmp=$(mktemp -p "$(dirname "$global_settings")")
       jq --arg p "$perm" '.permissions = (.permissions // {}) | .permissions.allow = ((.permissions.allow // []) + [$p])' "$global_settings" > "$tmp"
       mv "$tmp" "$global_settings"
     fi
