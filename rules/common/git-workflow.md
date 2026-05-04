@@ -25,13 +25,13 @@ Commit work-in-progress frequently. Don't accumulate many uncommitted edits acro
 
 Never push planning artifacts to the remote repository. This includes:
 - `.planning/` (GSD)
-- `.claude/ssp-plans/` and `__ssp__/` (SSP)
+- `__ssp__/` (SSP)
 - `docs/plans/`
 - Ad-hoc scratch docs like `setup-project-rules.md`, `notes-to-self.md`, etc.
 
 **Why:** These are local-only workspace artifacts, not part of the codebase. Pushing them clutters PRs with files reviewers can't act on and leaks in-progress thinking.
 
-**How to apply:** Before any `git push` or `gh pr create`, run `git diff <base>...HEAD --name-only | grep -E '(\.planning|ssp-plans|__ssp__|docs/plans)'`. If anything matches, either unstage those files or rebase them out before pushing.
+**How to apply:** Before any `git push` or `gh pr create`, run `git diff <base>...HEAD --name-only | grep -E '(\.planning|__ssp__|docs/plans)'`. If anything matches, either unstage those files or rebase them out before pushing.
 
 <!-- Origin: feedback_no_push_planning.md (project memory promotion) -->
 
