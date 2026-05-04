@@ -1,0 +1,6 @@
+# SSP plan artifacts — local-only, never pushed
+.claude/ssp-plans/
+
+# OS / editor noise
+.DS_Store
+*.swp

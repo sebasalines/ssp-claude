@@ -13,7 +13,7 @@ A personal [Claude Code](https://claude.com/claude-code) plugin -- the **SSP** o
 | `ssp-verify` | Typecheck, tests, build, lint. Writes `VERIFICATION.md` to the plan folder. |
 | `ssp-learn` | Extracts reusable patterns from a completed plan — code and process. |
 | `ssp-clean` | Compresses a finished plan folder into a single audit-trail markdown. Manual only. |
-| `ssp-update` | Snapshots all SSP skills + agent to a private GitHub gist backup. |
+| `ssp-local-sync` | Syncs the local staging branch — fetches origin/main, fast-forwards or auto-resets+remerges if diverged, merges the current branch in, runs post-merge hooks (npm install, prisma, tmux pane restart). |
 | `ssp-review-prs` | Scans for PRs assigned or review-requested and spawns background code reviews via `claude -p` in worktrees. |
 | `ssp-setup-worktree` | Symlinks shared project state (node_modules, generated code, `.claude/ssp-plans`) from a fresh worktree to the main working tree. Auto-invoked by `/ssp-plan` when needed. |
 
@@ -74,8 +74,8 @@ claude --worktree            ← fresh worktree
 ```
 
 Parallel utilities:
+- `/ssp-local-sync` — sync your local staging branch with the latest integration branch (post-`/ssp-run`)
 - `/ssp-review-prs` — run periodically (e.g. with `/loop`) to review incoming PRs in the background
-- `/ssp-update` — snapshot the current skills/agent/rules state to a private gist backup
 
 ## Plan artifacts
 
