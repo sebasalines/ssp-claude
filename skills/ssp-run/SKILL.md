@@ -106,7 +106,7 @@ Agent(
   model: "<task.model from frontmatter — default sonnet>",
   prompt: "Execute task <id> from plan <slug>.
 
-    Plan folder: <absolute path to .claude/ssp-plans/<slug>/>
+    Plan folder: <absolute path to __ssp__/plans/<slug>/>
     Task spec: <absolute path>/tasks/<id>-<name>.md
 
     Your job is to TRANSLATE the task spec's ## Implementation block into code
