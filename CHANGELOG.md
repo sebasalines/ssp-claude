@@ -5,6 +5,7 @@ All notable changes to the ssp-claude plugin are recorded here. Format loosely f
 ## 2026-05-04
 
 ### Added
+- **`session-start-worktree-detect` hook (Bundle B).** New `SessionStart` hook at `hooks/ssp-claude/session-start-worktree-detect.sh`. Detects fresh worktrees missing `__ssp__/plans` symlink and/or projects missing `__ssp__/` in `.gitignore`, then injects onboarding context that prompts Claude to AskUserQuestion before responding to the user's first message. Three-option flow: (a) setup worktree only, (b) setup worktree + run `/ssp-setup-project`, (c) skip. Skip is first-class via `.claude/.ssp-worktree-skip` marker file. `install.sh` registers the hook in `~/.claude/settings.json` behind a confirmation prompt (overridable via `SSP_SKIP_HOOK_REGISTER=1`).
 - **`ssp-setup-project` skill.** Bootstraps SSP in any consuming project: adds `__ssp__/` to project `.gitignore`, creates/merges allow-rules in `.claude/settings.local.json` (and optionally `~/.claude/settings.json` behind a separate AskUserQuestion gate), and migrates any legacy `.claude/ssp-plans/*` content via `git mv` (or plain `mv` when the path is gitignored). Idempotent on re-run.
 
 ### Changed
