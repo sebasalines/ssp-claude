@@ -52,6 +52,34 @@ If a required target is missing in the main tree (e.g. `node_modules` not yet in
 - Auto-invoked by `/ssp-plan` Step 0 if it detects a worktree without the expected symlinks
 - Any time a worktree feels "stale" — re-running is safe
 
+## Rename + Setup Flow (post-Bundle B)
+
+When invoked via the Bundle B SessionStart hook (or manually with intent to rename), follow this exact sequence:
+
+1. **Ask the user for a meaningful branch slug.** Via `AskUserQuestion`. Format examples: `feat/chat-sidebar`, `fix/auth-redirect`, `chore/cleanup-foo`. Don't accept blank or whitespace-only input.
+
+2. **Rename the branch in-session.** This is safe — it doesn't change the working directory:
+   ```bash
+   git branch -m "<new-slug>"
+   ```
+
+3. **Run the symlink script.**
+   ```bash
+   bash ~/.claude/skills/ssp-setup-worktree/setup.sh
+   ```
+   The script reports per-target status (`linked`, `already-linked`, `replaced`, `skipped`).
+
+4. **Print the post-session directory-rename instruction.** Tell the user:
+   > After this session ends, run:
+   > ```
+   > cd .. && mv <current-worktree-dir-name> <new-slug-basename>
+   > ```
+   > to rename the worktree directory to match the branch.
+
+   The directory rename can NOT happen in-session because it invalidates Claude Code's cwd and breaks the harness. The user's terminal context after `claude` exits is the right place.
+
+5. **Carry the user's original request forward.** If the user typed something like "make me a chat sidebar" and the hook intercepted to ask about setup, after the rename + setup is done, immediately address the original request. Do NOT make the user re-type it.
+
 ## Do NOT
 
 - **Do not run `npm install` from inside this skill.** The main working tree owns dependency state. If a dep error appears or `package.json`/`package-lock.json` changed, install in the main tree only, then re-run this skill to refresh.
