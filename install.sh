@@ -102,7 +102,7 @@ register_session_start_hook() {
   echo "Register the SSP worktree-detect SessionStart hook globally?"
   echo ""
   echo "  Target file: $settings"
-  echo "  Hook fires once per session in fresh worktrees missing __ssp__/"
+  echo "  Hook fires once per session in fresh worktrees missing .__ssp__/"
   echo "  symlinks. Injects context offering rename + setup. Skip path is"
   echo "  first-class (worktree-level skip marker)."
   echo ""

@@ -21,7 +21,7 @@ Creates idempotent symlinks from the current worktree → the main working tree 
 - `apps/ui/.env.local` (required for `next build`; typecheck/tests stub Prisma)
 
 **Plan artifacts** (write-through so plans survive worktree cleanup):
-- `__ssp__/plans/`
+- `.__ssp__/plans/`
 
 The list is spiralpegasus-specific for now. Edit `setup.sh` to adjust.
 

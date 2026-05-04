@@ -49,7 +49,7 @@ Don't use for single-file changes or trivial fixes — just do those directly.
 
    Only advance to step 1 when the worktree is even-or-ahead of `origin/main`.
 
-0b. **Worktree symlink check.** If running inside a secondary worktree (i.e. `git rev-parse --show-toplevel` ≠ the main working tree from `git worktree list | head -1`), ensure shared state is symlinked. The cheap heuristic: `node_modules` and `__ssp__/plans` should be symlinks pointing at the main tree. If either is missing or is a real directory, run:
+0b. **Worktree symlink check.** If running inside a secondary worktree (i.e. `git rev-parse --show-toplevel` ≠ the main working tree from `git worktree list | head -1`), ensure shared state is symlinked. The cheap heuristic: `node_modules` and `.__ssp__/plans` should be symlinks pointing at the main tree. If either is missing or is a real directory, run:
 
    ```bash
    bash ~/.claude/skills/ssp-setup-worktree/setup.sh
@@ -91,7 +91,7 @@ Don't use for single-file changes or trivial fixes — just do those directly.
 5. Create the plan folder:
 
 ```bash
-mkdir -p __ssp__/plans/<slug>/tasks __ssp__/plans/<slug>/results
+mkdir -p .__ssp__/plans/<slug>/tasks .__ssp__/plans/<slug>/results
 ```
 
 ### Step 1: Discovery

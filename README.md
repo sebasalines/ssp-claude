@@ -15,7 +15,7 @@ A personal [Claude Code](https://claude.com/claude-code) plugin -- the **SSP** o
 | `ssp-clean` | Compresses a finished plan folder into a single audit-trail markdown. Manual only. |
 | `ssp-local-sync` | Syncs the local staging branch — fetches origin/main, fast-forwards or auto-resets+remerges if diverged, merges the current branch in, runs post-merge hooks (npm install, prisma, tmux pane restart). |
 | `ssp-review-prs` | Scans for PRs assigned or review-requested and spawns background code reviews via `claude -p` in worktrees. |
-| `ssp-setup-worktree` | Symlinks shared project state (node_modules, generated code, `__ssp__/plans`) from a fresh worktree to the main working tree. Auto-invoked by `/ssp-plan` when needed. |
+| `ssp-setup-worktree` | Symlinks shared project state (node_modules, generated code, `.__ssp__/plans`) from a fresh worktree to the main working tree. Auto-invoked by `/ssp-plan` when needed. |
 
 ### Agents (1)
 
@@ -27,7 +27,7 @@ A personal [Claude Code](https://claude.com/claude-code) plugin -- the **SSP** o
 
 | Hook | Event | Purpose |
 |------|-------|---------|
-| `ssp-claude/session-start-worktree-detect.sh` | `SessionStart` | Detects fresh worktrees missing `__ssp__/plans` symlink or projects missing `__ssp__/` in `.gitignore`. Injects onboarding context that prompts Claude to ask the user about renaming the branch + running `/ssp-setup-worktree` (and optionally `/ssp-setup-project`) before responding to their actual first message. Skip path is first-class — dismissible per-worktree via `.claude/.ssp-worktree-skip` marker. |
+| `ssp-claude/session-start-worktree-detect.sh` | `SessionStart` | Detects fresh worktrees missing `.__ssp__/plans` symlink or projects missing `.__ssp__/` in `.gitignore`. Injects onboarding context that prompts Claude to ask the user about renaming the branch + running `/ssp-setup-worktree` (and optionally `/ssp-setup-project`) before responding to their actual first message. Skip path is first-class — dismissible per-worktree via `.claude/.ssp-worktree-skip` marker. |
 
 Installed into `~/.claude/hooks/ssp-claude/` and registered in `~/.claude/settings.json` under `.hooks.SessionStart` by `install.sh` (prompt-gated; set `SSP_SKIP_HOOK_REGISTER=1` to skip the prompt).
 
@@ -66,10 +66,10 @@ Copies skills to `~/.claude/skills/`, the agent to `~/.claude/agents/`, hooks to
 claude --worktree            ← fresh worktree
     ↓
 /ssp-setup-worktree          (auto-invoked by /ssp-plan, or run standalone)
-    → symlinks node_modules, generated code, __ssp__/plans to the main tree
+    → symlinks node_modules, generated code, .__ssp__/plans to the main tree
     ↓
 /ssp-plan                    → Discovery → discussion → atomic task specs with wave graph
-    ↓                         Plans live under __ssp__/plans/<slug>/
+    ↓                         Plans live under .__ssp__/plans/<slug>/
 /ssp-run                     → Parallel wave execution (ssp-executor subagents)
                                → auto-commits per task, rebases onto staging branch
                                → auto-spawns code-reviewer + security-reviewer
@@ -87,9 +87,9 @@ Parallel utilities:
 
 ## Plan artifacts
 
-Plans write to `__ssp__/plans/<slug>/` in the project root — though typically you don't need to add the path to `.gitignore` manually; the `/ssp-setup-project` skill does that for you (along with permission setup and migrating any legacy `.claude/ssp-plans/` content). Inside a worktree, `ssp-setup-worktree` symlinks `__ssp__/plans` to the main working tree so plans survive worktree cleanup and are visible from the main tree without copy-back.
+Plans write to `.__ssp__/plans/<slug>/` in the project root — though typically you don't need to add the path to `.gitignore` manually; the `/ssp-setup-project` skill does that for you (along with permission setup and migrating any legacy `.claude/ssp-plans/` content). Inside a worktree, `ssp-setup-worktree` symlinks `.__ssp__/plans` to the main working tree so plans survive worktree cleanup and are visible from the main tree without copy-back.
 
-Previous versions of SSP used `.planning/<slug>/`, then `.claude/ssp-plans/<slug>/`. The path moved to `__ssp__/plans/<slug>/` so it sorts to the top of filesystem views (no clutter under `.claude/`) and signals "tooling output, not source" via the underscore-bracketed name. Run `/ssp-setup-project` to migrate existing `.claude/ssp-plans/` content if you have any.
+Previous versions of SSP used `.planning/<slug>/`, then `.claude/ssp-plans/<slug>/`. The path moved to `.__ssp__/plans/<slug>/` so it sorts to the top of filesystem views (no clutter under `.claude/`) and signals "tooling output, not source" via the underscore-bracketed name. Run `/ssp-setup-project` to migrate existing `.claude/ssp-plans/` content if you have any.
 
 ## Philosophy
 

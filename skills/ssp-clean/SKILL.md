@@ -69,17 +69,17 @@ Create a single markdown that captures the full picture:
 ### Step 3: Archive
 
 ```bash
-mkdir -p __ssp__/plans/__archived__
+mkdir -p .__ssp__/plans/__archived__
 ```
 
-Write the summary to `__ssp__/plans/__archived__/<slug>.md`.
+Write the summary to `.__ssp__/plans/__archived__/<slug>.md`.
 
 ### Step 4: Delete the plan folder
 
 ```bash
-rm -rf __ssp__/plans/<slug>/
+rm -rf .__ssp__/plans/<slug>/
 ```
 
 **Only after confirming the archive file was written.** Tell the user:
 
-"Archived to `__ssp__/plans/__archived__/<slug>.md` — full plan folder removed."
+"Archived to `.__ssp__/plans/__archived__/<slug>.md` — full plan folder removed."

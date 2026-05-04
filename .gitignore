@@ -1,5 +1,5 @@
 # SSP plan artifacts — local-only, never pushed
-__ssp__/
+.__ssp__/
 .claude/ssp-plans/
 
 # OS / editor noise
