@@ -2,6 +2,32 @@
 
 All notable changes to the ssp-claude plugin are recorded here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project is personal and unversioned — entries are grouped by date.
 
+## 2026-05-04
+
+### Added
+- **`ssp-setup-project` skill.** Bootstraps SSP in any consuming project: adds `__ssp__/` to project `.gitignore`, creates/merges allow-rules in `.claude/settings.local.json` (and optionally `~/.claude/settings.json` behind a separate AskUserQuestion gate), and migrates any legacy `.claude/ssp-plans/*` content via `git mv` (or plain `mv` when the path is gitignored). Idempotent on re-run.
+
+### Changed
+- **Plan artifact path renamed** from `.claude/ssp-plans/<slug>/` to `__ssp__/plans/<slug>/`. The new path sorts to the top of filesystem views (no clutter under `.claude/`) and signals "tooling output, not source" via the underscore-bracketed name. Updated across `ssp-plan`, `ssp-run`, `ssp-clean`, `ssp-setup-worktree`, `rules/common/git-workflow.md`, and `README.md`. Run `/ssp-setup-project` per consuming project to migrate any existing plans.
+- **`.gitignore`** keeps `.claude/ssp-plans/` for back-compat with existing plans on `main` while adding `__ssp__/` as the new canonical entry.
+
+## 2026-05-01
+
+### Added
+- **`ssp-local-sync` skill.** Owns all local staging branch operations: fetches `origin/main`, fast-forwards `seba-local`, auto-resets+remerges if diverged (with reflog backup at `~/.claude/ssp-staging-reset-log.md`), merges the current worktree branch in, runs post-merge hooks (`npm install`, `prisma generate`, `prisma migrate dev`, optional tmux pane restart via `.claude/local-sync.json`). Allowlists `restart_cmd` against a strict regex; format-validates `tmux_session` and `target` before any tmux call; gates the destructive reset behind an explicit `AskUserQuestion`.
+- **`rules/common/escalation.md`.** New global rule codifying the "two-failure pivot" pattern with concrete signals (202 polling, identical empty results, parallel-worker same-mode failures).
+- **`ssp-verify` Step 5: branch-base sanity check.** Hard-fails if file count vs `origin/main` exceeds 100 OR if the branch is rooted off the staging branch instead of `origin/main`. Opt-out via `SSP_VERIFY_SKIP_DIFFSTAT=1`.
+- **`/ssp-plan` decision-table row** for staging branch — when current branch matches the configured staging branch, force `branch_mode: new-branch` off `origin/main` to prevent accidental commits to the integration sandbox.
+- **Global rules ported from project memory** into `rules/common/`: worktree location standard, fix-don't-instruct, explain-before-implementing (in `development-workflow.md`); commit-early-hooks-revert, never-push-planning-files, resolve-merge-conflicts-pragmatically (in `git-workflow.md`). Each section carries an `<!-- Origin: ... -->` attribution comment.
+- **`.gitignore`** for ssp-claude itself — never-push-planning rule now applies to the SSP source repo too.
+
+### Changed
+- **`/ssp-run` Step 6 (Merge to staging) removed.** Staging operations are now exclusively `/ssp-local-sync`'s responsibility. Step 5 AskUserQuestion offers "Run /ssp-local-sync" instead of "Merge to staging" with explicit deferral note for code review and learnings.
+- **The Local Staging Branch contract** in `rules/common/development-workflow.md` rewritten as five non-negotiable rules: features base off `origin/main`, one-way merges into staging, PRs always target `main`, fast-forward-or-reset before merging, never push staging.
+
+### Removed
+- **`ssp-update` skill.** Gist-snapshot backup retired now that `~/projects/ssp-claude` is the canonical source of truth versioned via PRs.
+
 ## 2026-04-23
 
 ### Added
