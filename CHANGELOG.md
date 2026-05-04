@@ -4,12 +4,15 @@ All notable changes to the ssp-claude plugin are recorded here. Format loosely f
 
 ## 2026-05-04
 
+### Changed
+- **Plan artifact path renamed** from `__ssp__/plans/` to `.__ssp__/plans/` (leading dot → dotfile). Hidden from `ls`, still sorts to the top of editor file trees (VSCode, IntelliJ — `.` sorts before `_`). Updated across all 12 source files: `install.sh`, `.gitignore`, `README.md`, `CHANGELOG.md`, `hooks/ssp-claude/session-start-worktree-detect.sh`, `rules/common/git-workflow.md`, and all 5 SSP skills that reference the path. Same-day flip — Bundle C's `__ssp__/` was only briefly canonical between merges; no consuming projects had a chance to populate it.
+
 ### Added
 - **`session-start-worktree-detect` hook (Bundle B).** New `SessionStart` hook at `hooks/ssp-claude/session-start-worktree-detect.sh`. Detects fresh worktrees missing `.__ssp__/plans` symlink and/or projects missing `.__ssp__/` in `.gitignore`, then injects onboarding context that prompts Claude to AskUserQuestion before responding to the user's first message. Three-option flow: (a) setup worktree only, (b) setup worktree + run `/ssp-setup-project`, (c) skip. Skip is first-class via `.claude/.ssp-worktree-skip` marker file. `install.sh` registers the hook in `~/.claude/settings.json` behind a confirmation prompt (overridable via `SSP_SKIP_HOOK_REGISTER=1`).
 - **`ssp-setup-project` skill.** Bootstraps SSP in any consuming project: adds `.__ssp__/` to project `.gitignore`, creates/merges allow-rules in `.claude/settings.local.json` (and optionally `~/.claude/settings.json` behind a separate AskUserQuestion gate), and migrates any legacy `.claude/ssp-plans/*` content via `git mv` (or plain `mv` when the path is gitignored). Idempotent on re-run.
 
 ### Changed
-- **Plan artifact path renamed** from `.claude/ssp-plans/<slug>/` to `.__ssp__/plans/<slug>/`. The new path sorts to the top of filesystem views (no clutter under `.claude/`) and signals "tooling output, not source" via the underscore-bracketed name. Updated across `ssp-plan`, `ssp-run`, `ssp-clean`, `ssp-setup-worktree`, `rules/common/git-workflow.md`, and `README.md`. Run `/ssp-setup-project` per consuming project to migrate any existing plans.
+- **Plan artifact path renamed** from `.claude/ssp-plans/<slug>/` to `.__ssp__/plans/<slug>/`. The new path is a dotfile (hidden in `ls`) but sorts to the top of editor file trees and signals "tooling output, not source" via the underscore-bracketed name. (Briefly named `__ssp__/` between merges before the dotfile flip — see the rename entry above.) Updated across `ssp-plan`, `ssp-run`, `ssp-clean`, `ssp-setup-worktree`, `rules/common/git-workflow.md`, and `README.md`. Run `/ssp-setup-project` per consuming project to migrate any existing plans.
 - **`.gitignore`** keeps `.claude/ssp-plans/` for back-compat with existing plans on `main` while adding `.__ssp__/` as the new canonical entry.
 
 ## 2026-05-01

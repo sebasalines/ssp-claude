@@ -89,7 +89,12 @@ Parallel utilities:
 
 Plans write to `.__ssp__/plans/<slug>/` in the project root — though typically you don't need to add the path to `.gitignore` manually; the `/ssp-setup-project` skill does that for you (along with permission setup and migrating any legacy `.claude/ssp-plans/` content). Inside a worktree, `ssp-setup-worktree` symlinks `.__ssp__/plans` to the main working tree so plans survive worktree cleanup and are visible from the main tree without copy-back.
 
-Previous versions of SSP used `.planning/<slug>/`, then `.claude/ssp-plans/<slug>/`. The path moved to `.__ssp__/plans/<slug>/` so it sorts to the top of filesystem views (no clutter under `.claude/`) and signals "tooling output, not source" via the underscore-bracketed name. Run `/ssp-setup-project` to migrate existing `.claude/ssp-plans/` content if you have any.
+Previous versions of SSP used `.planning/<slug>/`, then `.claude/ssp-plans/<slug>/`. The path moved to `.__ssp__/plans/<slug>/` because:
+- The leading dot makes it a dotfile — hidden from `ls` and similar terminal tools, no clutter when poking at project roots.
+- Editor file trees (VSCode, IntelliJ) still show dotfiles by default, and `.` sorts before any letter or `_`, so `.__ssp__/` lands at the top of the explorer.
+- The `__ssp__` prefix signals "tooling output, not source" — clear at a glance that this directory shouldn't be edited by hand.
+
+Run `/ssp-setup-project` to migrate existing `.claude/ssp-plans/` content if you have any.
 
 ## Philosophy
 
